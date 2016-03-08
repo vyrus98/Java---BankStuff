@@ -1,166 +1,132 @@
-/**
- * This class will be an interface for bank workers.
- * 
- * @Original author Tony Quang
- * @version 3/15/07
- */
+
 
 import java.util.Scanner;
 import java.util.*;
 
-public class Bank
-{
-	Scanner scan = new Scanner(System.in);
-	//private BankAcct[] allAccounts;// = new BankAcct[20];
-	private List<BankAcct> allAccounts = new ArrayList<BankAcct>();
-	/**
-	 * Constructor for objects of class Bank
-	 */
+public class Bank {
+	private List<BankAccount> allAccounts = new ArrayList<BankAccount>();
+
 	public Bank()
 	{
 
+		allAccounts.add(new BankAccount("cyrus", 700));
+		allAccounts.add(new BankAccount("test", 20));
+		allAccounts.add(new BankAccount("Al", 12314.34));
+		allAccounts.add(new BankAccount("seven", 0));
+		allAccounts.add(new BankAccount("cyrus", 9.9));
+		allAccounts.add(new BankAccount("cyrus", 9.9));
 
-		allAccounts.add(new BankAcct("cyrus", 700, 0));
-		allAccounts.add(new BankAcct("test", 20, 0));
-		allAccounts.add(new BankAcct("Ali", 12314.34, 0));
-		allAccounts.add(new BankAcct("seven", 0, 0));
-		allAccounts.add(new BankAcct("cyrus", 9.9, 0));
-		allAccounts.add(new BankAcct("cyrus", 9.9, 0));
+		//String input;
+		while (true) {
+			String input = options();
 
-		String optionString="";
-		System.out.println("WELCOME TO OUR BANK");
-
-		while (!optionString.equals("g")) {
-			optionString=options();
-			if (optionString.equals("a"))
+			if (input.equals("a"))
 			{
-				createAccount();
+				createAccount(false);
 			}
 			//selects individual account
-			else if (optionString.equals("b"))
+			if (input.equals("b"))
 			{
-				selectAccount();
+				selectAccount(true);
 			}
 			//consolidates accounts
-			else if (optionString.equals("c"))
+			if (input.equals("c"))
 			{
 				consolidateAccounts();
 			}
 			//transfer funds
-			else if (optionString.equals("d"))
+			if (input.equals("d"))
 			{
 				transferFunds();
 			}
 			//lists open accounts
-			else if (optionString.equals("e"))
+			if (input.equals("e"))
 			{
-				listOpenAccounts();
+				listOpenAccounts(false, false);
 			}
 			//lists bank info
-			else if (optionString.equals("f"))
+			if (input.equals("f"))
 			{
 				listBankInfo();
 			}
-			else if (optionString.equals("g")) {
+			if (input.equals("g")) {
 				break;
 			}
-			else {
-				System.out.println("Bad input, try again");
-			}
-
 		}
 
-	}
 
-	//This method displays the user options
-	public String options() {
-		System.out.println("\nChoose one\n"+
-				"a. create new account\n"+
-				"b. select individual account\n"+
-				"c. consolidate accounts\n"+
-				"d. transfer funds\n"+
-				"e. list open accounts\n"+
-				"f. list bank info\n"+
-				"g. exit");
-		return readString();    
-	}
-
-	public String readString() {
-		scan = new Scanner(System.in);
-		String input=scan.nextLine();
-		return input;
 	}
 
 	//If there is an available account (one that is null), it will read in username and balance and create a new account
-	public void createAccount() {
-		print("You are creating a new account.\nPlease enter a name for the account, or null for a null account: ");
-		String name = readString();
-		if (!name.contains("CLOSED") && !name.isEmpty() && !name.equals("null")) {
-			print("And the initial deposit: ");
+	public void createAccount(boolean isNull) {
+		if (!isNull) {
+			print ("Enter the name for this account: ");
+			String name = readString();
+			if (name.toLowerCase().contains("CLOSED") || name.toLowerCase().contains("null") ||name.isEmpty()) {
+				print ("Error while naming\n");
+				return;
+			}
+			print ("Enter the initial deposit: ");
+			double initial = -1;
 			try {
-				double funds = ((int)(Double.parseDouble(readString())*100)/100.0);
-				print("New account created under " + name + ".\n");
-				allAccounts.add(new BankAcct(name, funds, 0));
+				initial = BankAccount.realAmount(Double.parseDouble(readString()));
 			}
 			catch (NumberFormatException e) {
-				print("\nBad Input " + e.getMessage());
+				print ("Bad amount\n");
+				return;
+			}
+			if (initial >= 0) {
+				allAccounts.add(new BankAccount(name, initial));
+				print ("You have created an account:\n" + allAccounts.get(allAccounts.size() -1).toString() + "\n");
 			}
 		}
-		else if (name.equals("null")) {
-			allAccounts.add(new BankAcct());
-		}
 		else {
-			print("Bad input, account names cannot contain `CLOSED` or be empty".replace('`','"'));
+			allAccounts.add(new BankAccount("null", 0));
 		}
 	}
 
 	//THIS IS THE TRICKY ONE - Display the accounts (listOpenAccounts) and read in the user which account they want to work on
 	//Then ask if they would like to make a deposit or withdrawl or getbalance
 	//Do what they ask     
-	public void selectAccount() {
-		while (true) {
-			print("There are " + BankAcct.getNumOfAccounts() + " accounts, would you like to search by name or number? [y/n] ");
-			String answer = readString();
-			if (answer.toLowerCase().equals("y")) {
-				print("Please enter a name to search for, or an account number or partial number: ");
-				String search = readString().toLowerCase();
-				try {
-					int number = Integer.parseInt(search);
-					if (!searchByNumber(number)) {
-						print ("No accounts found\n");
-						break;
-					}
-				}
-				catch (NumberFormatException e) {
-					listOpenAccounts(search);
-				}
-			}
-			else if (answer.toLowerCase().equals("n")) {
-				print("Printing all accounts\n");
-				listOpenAccounts();
+	public void selectAccount(boolean list) {
+		if (list) {
+			listOpenAccounts(false, false);
+		}
+
+		int selection = -1;
+
+		print ("Please select an account by full account number, or `e` to exit: ".replace('`', '"'));
+		String read = readString();
+		try {
+			selection = Integer.parseInt(read);
+		}
+		catch (NumberFormatException e) {
+			if (read.equals("e")) {
+				return;
 			}
 			else {
-				print("Bad input\n");
-				break;
+				print ("Bad selection\n");
+				selectAccount(false);
 			}
-			print("Select an account by entering their full account number: ");
-			String selection = readString();
-			try {
-				int number = Integer.parseInt(selection);
-				if (number < 1000 || number > allAccounts.size() + 1000) {
-					print("Bad selection\n");
-					break;
-				}
-				print ("You selected account number " + selection + ", under " + allAccounts.get(number - 1000).acctHolder + "\n");
-				print ("Would you like to [d]eposit, [w]ithdraw, [c]lose, or [e]xit? ");
-				String input = readString().toLowerCase();
+		}
+
+		if (selection < 1000 || selection > allAccounts.size() + 1000 || allAccounts.get(selection - 1000).acctHolder.contains("CLOSED") || allAccounts.get(selection - 1000).acctHolder.contains("null")) {
+			print ("Bad selection\n");
+			selectAccount(false);
+		}
+		else {
+			print ("You selected account number " + selection + ", under " + allAccounts.get(selection - 1000).acctHolder + "\n");
+			while (true) {
+				print ("Would you like to [d]eposit, [w]ithdraw, [g]etBalance, [c]lose, or [e]xit? ");
+				String input = readString();
 				if (input.equals("d")) {
 					print ("How much? ");
 					try {
 						double amount = Double.parseDouble(readString());
 						if (amount > 0) {
-							allAccounts.get(number - 1000).deposit(amount);
-							break;
+							allAccounts.get(selection - 1000).deposit(amount, false);
+							print ("You deposited $" + amount + "\n");
+							//continue;
 						}
 						else {
 							print ("Sorry, that is not a valid amount\n");
@@ -174,9 +140,10 @@ public class Bank
 					print ("How much? ");
 					try {
 						double amount = Double.parseDouble(readString());
-						if (amount > 0 && amount < allAccounts.get(number - 1000).getBalance()) {
-							allAccounts.get(number - 1000).withdraw(amount);
-							break;
+						if (amount > 0 && amount < allAccounts.get(selection - 1000).getBalance()) {
+							allAccounts.get(selection - 1000).withdraw(amount);
+							print ("You withdrew $" + amount + "\n");
+							//continue;
 						}
 						else {
 							print ("Sorry, that is not a valid amount\n");
@@ -186,16 +153,24 @@ public class Bank
 						print ("Sorry, that is not a valid amount");
 					}
 				}
+
+				else if (input.equals("g")) {
+					print ("$" + allAccounts.get(selection - 1000).getBalance() + "\n");
+				}
+
 				else if (input.equals("c")) {
-					allAccounts.get(number - 1000).close();
+					allAccounts.get(selection - 1000).close();
+					print ("Account closed\n");
 					break;
 				}
 				else if (input.equals("e")) {
+					print ("exiting\n");
 					break;
 				}
-			}
-			catch (NumberFormatException e) {
-				print("Bad selection\n");
+				else {
+					print ("Bad input\n");
+					continue;
+				}
 			}
 		}
 	}
@@ -203,144 +178,179 @@ public class Bank
 	//If there are atleast 2 accounts and atleast one open account (one thats null) show the user the accounts (listOpenAccounts) and then
 	//ask the user which accounts to consolidate.  Then consolidate them (creating a new accnt) telling them the new account info
 	public void consolidateAccounts() {
-		if (allAccounts.size() >= 2) {
-			if (!listOpenAccounts("null")) {
-				allAccounts.add(new BankAcct());
-			}
-			
-			listBankInfo();
-			
-			listOpenAccounts();
-			print ("Enter the account numbers of the accounts to be consolidated, pressing enter in between:\n");			
-			try {
-				BankAcct firstAcct = allAccounts.get((Integer.parseInt(readString()) - 1000));
-				BankAcct secondAcct = allAccounts.get((Integer.parseInt(readString()) - 1000));
-				for (int i=0; i<=allAccounts.size(); i++) {
-					if (i == allAccounts.size()) {
-						listBankInfo();
-						print("Failure");
+		if (allAccounts.size() > 2) {
+			if (listOpenAccounts(true, false) != -1) {
+				int selection1 = -1;
+				int selection2 = -1;
+				print ("Please enter each account number on its own line, or `e` to exit:\n".replace('`', '"'));
+				String read = readString();
+				try {
+					selection1 = Integer.parseInt(read);
+					selection2 = Integer.parseInt(readString());
+				}
+				catch (NumberFormatException e) {
+					if (read.equals("e")) {
+						return;
 					}
 					else {
-						String accountName = allAccounts.get(i).acctHolder;
-						if (accountName.contains("null")) {
-							listBankInfo();
-							allAccounts.set(i, BankAcct.consolidate(firstAcct, secondAcct));
-							print(allAccounts.get(i).getAcctNum() + "\n");
-							listBankInfo();
-							break;
-						}
+						print ("Bad selection\n");
+						consolidateAccounts();
 					}
 				}
 
+				if ( (selection1 < 1000 || selection1 > allAccounts.size() + 1000 || allAccounts.get(selection1 - 1000).acctHolder.contains("CLOSED") || allAccounts.get(selection1 - 1000).acctHolder.contains("null")) || (selection2 < 1000 || selection2 > allAccounts.size() + 1000 || allAccounts.get(selection2 - 1000).acctHolder.contains("CLOSED") || allAccounts.get(selection2 - 1000).acctHolder.contains("null")) ) {
+					print ("Bad selection\n");
+					consolidateAccounts();
+				}
+				else {
+					allAccounts.add(BankAccount.consolidate(allAccounts.get(selection1 - 1000), allAccounts.get(selection2 - 1000)));
+					print ("Accounts consolidated. New account:\n" + allAccounts.get(allAccounts.size() -1).toString() + "\n");
+				}
 			}
-			catch (NumberFormatException e) {
-				print ("Bad entry\n");
+			else {
+				consolidateAccounts();
 			}
-		}
-		else {
-			print ("No available accounts\n");
 		}
 	}
 
 	//transfers funds If there are atleast 2 accounts 
 	//ask the user which accounts to transfer money and then ask how much money.  
-	//Then transfer the money    
+	//Then transfer the money
 	public void transferFunds() {
-		print ("Which accounts would you like to transfer between?\nEnter each on their own line, sending then receiving:\n");
-		String acct1 = readString();
-		String acct2 = readString();
-		print ("How much? ");
-		String amount = readString();
-		try {
-			BankAcct sending = allAccounts.get(Integer.parseInt(acct1) - 1000);
-			BankAcct receiving = allAccounts.get(Integer.parseInt(acct2) - 1000);
-			double realAmount = (int)(Double.parseDouble(amount)*100)/100.0;
-			print ("Accounts currently:\n");
-			print (allAccounts.get(Integer.parseInt(acct1) - 1000).toString() + "\n");
-			print (allAccounts.get(Integer.parseInt(acct2) - 1000).toString() + "\n");
-			BankAcct.transfer(sending, receiving, realAmount);
-			print ("Accounts after transfer:\n");
-			print (allAccounts.get(Integer.parseInt(acct1) - 1000).toString() + "\n");
-			print (allAccounts.get(Integer.parseInt(acct2) - 1000).toString() + "\n");
+		transferFunds(null, null, 0);
+	}
+
+	public void transferFunds(BankAccount sa, BankAccount ra, double amount) {
+		if (sa != null && ra != null) {
+			BankAccount.transfer(sa, ra, amount);
 		}
-		catch (NumberFormatException e) {
-			print("Bad amount or bad account numbers\n");
+		else {
+			listOpenAccounts(false, false);
+			print ("Which accounts would you like to transfer between? Enter each account number on its own line\n");
+			int acct1 = -1;
+			int acct2 = -1;
+			try {
+				acct1 = Integer.parseInt(readString());
+				acct2 = Integer.parseInt(readString());
+			}
+			catch (NumberFormatException e) {
+				print ("Bad selection\n");
+			}
+			if ( (acct1 < 1000 || acct1 > allAccounts.size() + 1000 || allAccounts.get(acct1 - 1000).acctHolder.contains("CLOSED") || allAccounts.get(acct1 - 1000).acctHolder.contains("null")) || (acct2 < 1000 || acct2 > allAccounts.size() + 1000 || allAccounts.get(acct2 - 1000).acctHolder.contains("CLOSED") || allAccounts.get(acct2 - 1000).acctHolder.contains("null")) ) {
+				print ("Bad selection\n");
+				transferFunds(null, null, 0);
+			}
+			else {
+				BankAccount account1 = allAccounts.get(acct1 - 1000);
+				BankAccount account2 = allAccounts.get(acct2 - 1000);
+				print ("How much? ");
+				double transfer = 0;
+				try {
+					transfer = Double.parseDouble(readString());
+					double complete = account2.getBalance();
+					transferFunds(account1, account2, transfer);
+					if (account2.getBalance() > complete) {
+						print ("You transferred $" + transfer + " from " + account1.getAcctNum() + " to " + account2.getAcctNum() + "\n");
+					}
+					else {
+						print ("Error bad amount\n");
+					}
+				}
+				catch (NumberFormatException e) {
+					print ("Bad input\n");
+				}
+			}
 		}
 
 	}
 
 	//this method lists the open bank accounts 
-	public void listOpenAccounts() {
-		listOpenAccounts("");
-	}
-
-	public boolean listOpenAccounts(String name) {
-		int count = 0;
-		for (int i=0; i<allAccounts.size(); i++) {
-			String accountName = allAccounts.get(i).acctHolder;
-			if (!accountName.contains("CLOSED") && !accountName.contains("null") && accountName.contains(name)) {
-				print (allAccounts.get(i).toString() + "\n");
-				count++;
-			}
-		}
-		if (count == 0) {
-			if (!name.equals("null")) {
-				print("Sorry, no accounts founds under your search terms\n");
-			}
-			return false;
-		}
-		else {
-			return true;
-		}
-	}
-
-	//takes an integer and finds bank accounts that start with that number sequence
-	//good for finding a specific account or a group of accounts such as the first 100, 'searchByNumber(10)'
-	//would print accounts 1000, 1001, 1002.... 1098, 1099 because they all start with '10'
-	public boolean searchByNumber(int search) {
-		if (search < allAccounts.size() + 1000) {
+	public int listOpenAccounts(boolean search, boolean all) {
+		if (!search) {
 			int count = 0;
-			for (int i=0; i<allAccounts.size();) {
-				int digits = String.valueOf(search).length();
-				int accDigits = String.valueOf(allAccounts.get(i).getAcctNum()).length();
-				int getDig = (int)Math.pow( 10, (accDigits - digits) );
-				int digSet = allAccounts.get(i).getAcctNum()/getDig;
-				if (search == digSet) {
+			for (int i=0; i<allAccounts.size(); i++) {
+				if (all || (!allAccounts.get(i).acctHolder.contains("CLOSED") && !allAccounts.get(i).acctHolder.contains("null")) ) {
 					print (allAccounts.get(i).toString() + "\n");
-					i++;
 					count++;
 				}
-				else {
-					i += getDig;
-				}
 			}
-			if (count == 0) {
-				return false;
-			}
-			else {
-				return true;
-			}
+			return count;
 		}
 		else {
-			print("Bad account number, no accounts found");
-			return false;
+			print("There are " + BankAccount.getNumOfAccounts() + " accounts, would you like to search by name or number? [y/n] ");
+			String input = readString().toLowerCase();
+			if (input.equals("n")) {
+				listOpenAccounts(false, false);
+				return 0;
+			}
+			else if (input.equals("y")) {
+				print ("Enter a name or number or partial to search for: ");
+				input = readString();
+				int count = 0;
+				try {
+					int number = Integer.parseInt(input);
+					for (int i=0; i<allAccounts.size(); i++) {
+						if (Integer.toString(allAccounts.get(i).getAcctNum()).startsWith(Integer.toString(number))) {
+							print (allAccounts.get(i).toString() + "\n");
+							count ++;
+						}
+					}
+
+				}
+				catch (NumberFormatException e) {
+					for (int i=0; i<allAccounts.size(); i++) {
+						if (allAccounts.get(i).acctHolder.startsWith(input)) {
+							print (allAccounts.get(i).toString() + "\n");
+							count ++;
+						}
+					}
+				}
+				return count;
+			}
+			else {
+				print ("bad input\n");
+				return -1;
+			}
 		}
 	}
 
 	//this method will print all the bank info - how many accounts, how much money they hold
 	public void listBankInfo() {
-		for (int i=0; i<allAccounts.size(); i++) {
-			print (allAccounts.get(i).toString() + "\n");
-		}
-		print (allAccounts.size() + " accounts\n");
-		print ("Total bank worth $" + BankAcct.getTotalMoney() + "\n");
+		listOpenAccounts(false, true);
+		print ("There are " + BankAccount.getNumOfAccounts() + " open accounts\n");
+		print ("Total bank worth is $" + BankAccount.getTotalMoney() + "\n");
+	}
+
+
+
+	public String readString() {
+		Scanner scan = new Scanner(System.in);
+		//scan.close();
+		return scan.nextLine();
 	}
 
 	public void print(String s) {
 		System.out.print(s);
 	}
 
+	public String options () {
+		System.out.println("\nChoose one\n"+
+				"a. create new account\n"+
+				"b. select individual account\n"+
+				"c. consolidate accounts\n"+
+				"d. transfer funds\n"+
+				"e. list open accounts\n"+
+				"f. list bank info\n"+
+				"g. exit");
+		return readString();    
+	}
+
+
+
+
 	public static void main(String[] args) {
 		Bank b=new Bank();
+
 	}
+
 }
